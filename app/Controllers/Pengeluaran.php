@@ -1,58 +1,77 @@
 <?php namespace App\Controllers;
+
 use App\Models\PengeluaranModel;
 
-class Pengeluaran extends BaseController {
+class Pengeluaran extends BaseController
+{
+    protected $model;
 
-    // SEARCH
-    public function search() {
-        $keyword = $this->request->getGet('keyword') ?? '';
-        $model   = new PengeluaranModel();
-        $data    = $model->search($keyword);
-        return $this->response->setJSON($data);
+    public function __construct()
+    {
+        $this->model = new PengeluaranModel();
     }
 
-    // VIEW
-    public function index() {
+    public function index()
+    {
         return view('pengeluaran_view');
     }
 
-    // READ
-    public function list() {
-        $model = new PengeluaranModel();
-        $data  = $model->orderBy('tanggal','ASC')->findAll();
-        return $this->response->setJSON($data);
+    public function search()
+    {
+        $keyword = $this->request->getGet('keyword') ?? '';
+        $data    = $this->model->search($keyword);
+
+        return $this->response->setJSON([
+            'status'  => 'ok',
+            'message' => $data ? 'Data ditemukan' : 'Tidak ada data',
+            'data'    => $data
+        ]);
     }
 
-    // CREATE
-    public function create() {
-        $model = new PengeluaranModel();
-        $data  = [
+    public function list()
+    {
+        $data = $this->model->semua();
+
+        return $this->response->setJSON([
+            'status'  => 'ok',
+            'message' => $data ? 'Data berhasil dimuat' : 'Tidak ada data',
+            'data'    => $data
+        ]);
+    }
+
+    public function create()
+    {
+        $data = [
             'tanggal'    => $this->request->getPost('tanggal'),
             'keterangan' => $this->request->getPost('keterangan'),
             'nominal'    => $this->request->getPost('nominal')
         ];
-        $model->insert($data);
-        return $this->response->setJSON(['status'=>'ok']);
-    }
 
-    // UPDATE
-    public function update($id) {
-        $model = new PengeluaranModel();
-        $data  = [
-            'tanggal'    => $this->request->getPost('tanggal'),
-            'keterangan' => $this->request->getPost('keterangan'),
-            'nominal'    => $this->request->getPost('nominal')
-        ];
-        $model->update($id,$data);
-        return $this->response->setJSON(['status'=>'ok']);
-    }
-
-    // DELETE
-    public function delete($id) {
-        $model = new PengeluaranModel();
-        if ($model->delete($id)) {
-            return $this->response->setJSON(['status'=>'ok']);
+        if ($this->model->tambah($data)) {
+            return $this->response->setJSON(['status' => 'ok', 'message' => 'Data berhasil ditambah']);
         }
-        return $this->response->setJSON(['status'=>'error']);
+        return $this->response->setJSON(['status' => 'error', 'message' => 'Gagal menambah data']);
+    }
+
+    public function update(int $id)
+    {
+        $data = [
+            'tanggal'    => $this->request->getPost('tanggal'),
+            'keterangan' => $this->request->getPost('keterangan'),
+            'nominal'    => $this->request->getPost('nominal')
+        ];
+
+        if ($this->model->ubah($id, $data)) {
+            return $this->response->setJSON(['status' => 'ok', 'message' => 'Data berhasil diubah']);
+        }
+        return $this->response->setJSON(['status' => 'error', 'message' => 'Gagal mengubah data']);
+    }
+
+    public function delete(int $id)
+    {
+        if ($this->model->hapus($id)) {
+            return $this->response->setJSON(['status' => 'ok', 'message' => 'Data berhasil dihapus']);
+        }
+        return $this->response->setJSON(['status' => 'error', 'message' => 'Gagal menghapus data']);
     }
 }
