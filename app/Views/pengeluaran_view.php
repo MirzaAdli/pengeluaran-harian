@@ -5,7 +5,8 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     h1 { margin-bottom: 50px; text-align: center; font-size: 36px; }
-    form { margin-bottom: 30px; width: 30; }
+    form { margin-bottom: 30px; }
+    .form-cari { margin-bottom: 20px; }
     form input, form button {
       font-size: 18px;
       padding: 10px;
@@ -14,27 +15,10 @@
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #090909ff; padding: 8px; text-align: left; }
     th { background: #07ffe6ff; }
-  button {
-    padding: 8px 15px;
-    font-size: 16px;
-    border: none;
-    cursor: pointer;
-  }
-
-  form button {
-    background-color: #00ff08ff;
-    color: white;
-  }
-
-  .btn-edit {
-    background-color: #f3ff07ff;
-    color: black;
-  }
-
-  .btn-hapus {
-    background-color: #dc3545;
-    color: black;
-  }
+    button { padding: 8px 15px; font-size: 16px; border: none; cursor: pointer; }
+    form button { background-color: #00ff08ff; color: white; }
+    .btn-edit { background-color: #f3ff07ff; color: black; }
+    .btn-hapus { background-color: #dc3545; color: black; }
   </style>
 </head>
 <body>
@@ -46,6 +30,10 @@
     <input type="text" name="keterangan" placeholder="Keterangan" required>
     <input type="number" name="nominal" placeholder="Nominal" required>
     <button type="submit">Tambah</button>
+  </form>
+
+  <form class="form-cari">
+    <input type="text" id="keyword" placeholder="Cari...">
   </form>
 
   <!-- Tabel -->
@@ -72,6 +60,13 @@ async function loadData(){
   let data = await res.json();
   let tbody = document.getElementById('tabel');
   tbody.innerHTML = '';
+
+  if (!Array.isArray(data)) {
+    console.error('Data bukan array:', data);
+    alert('Terjadi kesalahan saat mengambil data');
+    return;
+  }
+
   data.forEach(d=>{
     tbody.innerHTML += `
       <tr>
@@ -127,6 +122,35 @@ async function edit(id,tanggal,keterangan,nominal){
   };
 }
 
+// Cari data
+async function cariData(){
+  const keyword = document.getElementById('keyword').value.trim();
+  const url = keyword ? '/pengeluaran/search?keyword='+encodeURIComponent(keyword)
+                      : '/pengeluaran/list';
+  let res = await fetch(url);
+  let data = await res.json();
+  let tbody = document.getElementById('tabel');
+  tbody.innerHTML = '';
+
+  if (!Array.isArray(data) || data.length === 0) {
+    tbody.innerHTML = "<tr><td colspan='4' style='text-align:center'>Tidak ada data ditemukan</td></tr>";
+    return;
+  }
+
+  data.forEach(d=>{
+    tbody.innerHTML += `
+      <tr>
+        <td>${d.tanggal}</td>
+        <td>${d.keterangan}</td>
+        <td>${formatRupiah(d.nominal)}</td>
+        <td>
+          <button class="btn-edit" onclick="edit(${d.id},'${d.tanggal}','${d.keterangan}',${d.nominal})">Edit</button>
+          <button class="btn-hapus" onclick="hapus(${d.id})">Hapus</button>
+        </td>
+      </tr>`;
+  });
+}
+document.getElementById('keyword').onkeyup = cariData;
 document.getElementById('form').onsubmit = defaultSubmit;
 loadData();
 </script>
